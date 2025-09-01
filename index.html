@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Cybersecurity Threat Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: "Warm Neutral" - A calming palette using beige, slate, stone, with a subtle blue for accents to create a professional and focused atmosphere. -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive dashboard. The structure prioritizes user understanding by moving from a high-level overview to specific, actionable details. It begins with key summary statistics, followed by a detailed, filterable "Threat Breakdown" section with interactive charts and corresponding text. The structure culminates in the "Live Threat Scanner" (CyberShield tool), allowing users to apply their learnings by analyzing real-world examples. This flow from macro-level data to micro-level application was chosen to guide the user from understanding the problem to having a tool to combat it. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Overall threat category distribution. -> Goal: Inform proportions. -> Viz: Donut Chart. -> Interaction: Hover to see details, click to filter the entire dashboard. -> Justification: A donut chart is excellent for showing part-to-whole relationships at a glance. -> Library: Chart.js (Canvas).
+        - Report Info: Monthly threat trends by category. -> Goal: Show change over time. -> Viz: Line Chart. -> Interaction: Tooltips on hover show data for specific months. -> Justification: Line charts are ideal for illustrating trends and patterns over a continuous period. -> Library: Chart.js (Canvas).
+        - Report Info: Threat delivery vectors. -> Goal: Compare different sources. -> Viz: Horizontal Bar Chart. -> Interaction: Hover for exact numbers. -> Justification: Horizontal bars are effective for comparing the magnitude of different categories with clear labeling. -> Library: Chart.js (Canvas).
+        - Report Info: Actionable threat analysis tool. -> Goal: Provide a utility. -> Presentation: Integrated tool UI. -> Interaction: User input (URL/Photo) triggers a simulated analysis. -> Justification: Turns passive information consumption into an active, engaging security practice. -> Method: HTML/CSS/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .active-tab { border-color: #3b82f6; color: #3b82f6; }
+        .inactive-tab { border-color: transparent; }
+        .risk-circle { transition: stroke-dashoffset 0.5s ease-in-out, stroke 0.5s ease-in-out; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-slate-900">Cybersecurity Threat Dashboard</h1>
+            <p class="mt-2 text-lg text-slate-600">An interactive analysis of the 2025 digital threat landscape.</p>
+        </header>
+
+        <main class="space-y-12">
+            <!-- Section 1: Key Statistics -->
+            <section id="stats">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-medium text-slate-500">Total Threats Analyzed</h3>
+                        <p class="text-3xl font-bold text-slate-900 mt-2">1,204,512</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-medium text-slate-500">Most Common Threat</h3>
+                        <p class="text-3xl font-bold text-blue-600 mt-2">Phishing</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-medium text-slate-500">Primary Vector</h3>
+                        <p class="text-3xl font-bold text-slate-900 mt-2">Email</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-medium text-slate-500">Year-Over-Year Increase</h3>
+                        <p class="text-3xl font-bold text-red-600 mt-2">+18%</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Threat Breakdown -->
+            <section id="breakdown" class="bg-white p-6 sm:p-8 rounded-lg border border-slate-200 shadow-sm">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-slate-900">Threat Breakdown</h2>
+                    <p class="mt-1 text-slate-600">This section provides a detailed look into the types, trends, and delivery methods of modern cyber threats. Click on a category in the "Threat Distribution" chart to filter the data across this section.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 items-center">
+                    <div class="space-y-4">
+                        <h3 id="distribution-title" class="text-xl font-semibold text-center text-slate-800">Threat Distribution (Overall)</h3>
+                        <div class="chart-container">
+                            <canvas id="threatDistributionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <h3 id="vector-title" class="text-xl font-semibold text-center text-slate-800">Top Threat Vectors (Overall)</h3>
+                        <div class="chart-container h-[400px]">
+                            <canvas id="threatVectorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                     <h3 id="trends-title" class="text-xl font-semibold text-center text-slate-800">Monthly Threat Trends (Overall)</h3>
+                     <div class="chart-container h-80 mt-4">
+                         <canvas id="threatTrendsChart"></canvas>
+                     </div>
+                </div>
+            </section>
+
+            <!-- Section 3: Live Threat Scanner -->
+            <section id="scanner" class="bg-white p-6 sm:p-8 rounded-lg border border-slate-200 shadow-sm">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900">Live Threat Scanner (CyberShield)</h2>
+                    <p class="mt-1 text-slate-600">Apply your knowledge. Use this tool to analyze links and photos for potential threats before you click. This scanner simulates a real-time analysis based on the threat characteristics discussed in this report.</p>
+                </div>
+
+                <div class="w-full max-w-2xl mx-auto bg-slate-100 rounded-xl p-6">
+                    <div class="flex border-b border-slate-300 mb-4">
+                        <button id="tab-link" class="flex-1 text-center py-2 px-4 font-semibold border-b-2 transition-colors duration-300 active-tab">Analyze Link</button>
+                        <button id="tab-photo" class="flex-1 text-center py-2 px-4 font-semibold border-b-2 transition-colors duration-300 inactive-tab text-slate-500">Analyze Photo</button>
+                    </div>
+
+                    <div id="forms-container">
+                        <form id="link-form" class="space-y-4">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="link-input" placeholder="https://example.com" class="flex-grow bg-white border border-slate-300 text-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-3 transition" required>
+                                <button type="submit" id="analyze-link-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center justify-center gap-2">
+                                    <span>Analyze</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <form id="photo-form" class="hidden space-y-4">
+                             <label for="photo-input" class="flex flex-col items-center justify-center w-full h-40 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-200 transition">
+                                <p class="text-sm text-slate-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <input id="photo-input" type="file" class="hidden" accept="image/png, image/jpeg, image/gif"/>
+                            </label>
+                             <p id="file-name" class="text-center text-slate-500 text-sm h-5"></p>
+                        </form>
+                    </div>
+
+                    <div id="results-container" class="hidden pt-6 mt-6 border-t border-slate-300">
+                        <div id="loading-spinner" class="hidden text-center"><p>Analyzing...</p></div>
+                        <div id="report" class="hidden flex flex-col md:flex-row items-center gap-6">
+                            <div class="relative flex-shrink-0">
+                                <svg class="h-40 w-40" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke-width="12" class="text-slate-200" />
+                                    <circle id="risk-circle-indicator" cx="60" cy="60" r="54" fill="none" stroke-width="12" class="risk-circle" stroke="currentColor" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="339.292" stroke-dashoffset="339.292" />
+                                </svg>
+                                <div id="risk-score" class="absolute inset-0 flex items-center justify-center text-4xl font-bold">0%</div>
+                            </div>
+                            <div class="w-full text-center md:text-left">
+                                <h3 id="risk-title" class="text-2xl font-bold"></h3>
+                                <p id="risk-summary" class="text-slate-600 mt-1 mb-4"></p>
+                                <ul id="risk-details" class="space-y-2 text-sm text-left"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+<script>
+const chartData = {
+    overall: {
+        distribution: [45, 30, 25],
+        vectors: [55, 25, 10, 5, 5],
+        trends: [
+            { "Phishing": 30, "Malware": 20, "Scams": 15 },
+            { "Phishing": 32, "Malware": 22, "Scams": 18 },
+            { "Phishing": 35, "Malware": 25, "Scams": 20 },
+            { "Phishing": 40, "Malware": 28, "Scams": 22 },
+            { "Phishing": 45, "Malware": 30, "Scams": 25 },
+            { "Phishing": 42, "Malware": 31, "Scams": 26 },
+        ]
+    },
+    phishing: {
+        distribution: [100, 0, 0],
+        vectors: [65, 20, 10, 3, 2],
+        trends: [30, 32, 35, 40, 45, 42]
+    },
+    malware: {
+        distribution: [0, 100, 0],
+        vectors: [30, 40, 15, 10, 5],
+        trends: [20, 22, 25, 28, 30, 31]
+    },
+    scams: {
+        distribution: [0, 0, 100],
+        vectors: [40, 25, 20, 10, 5],
+        trends: [15, 18, 20, 22, 25, 26]
+    }
+};
+
+const labels = {
+    distribution: ['Phishing', 'Malware', 'Social Engineering Scams'],
+    vectors: ['Email', 'Social Media', 'Direct Website', 'Messaging Apps', 'Malvertising'],
+    trends: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+};
+
+const colors = {
+    phishing: 'rgba(59, 130, 246, 0.8)',
+    malware: 'rgba(239, 68, 68, 0.8)',
+    scams: 'rgba(245, 158, 11, 0.8)',
+    phishingBorder: 'rgb(59, 130, 246)',
+    malwareBorder: 'rgb(239, 68, 68)',
+    scamsBorder: 'rgb(245, 158, 11)',
+};
+
+let distributionChart, vectorChart, trendsChart;
+
+const createCharts = () => {
+    const distCtx = document.getElementById('threatDistributionChart').getContext('2d');
+    distributionChart = new Chart(distCtx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.distribution,
+            datasets: [{
+                data: chartData.overall.distribution,
+                backgroundColor: [colors.phishing, colors.malware, colors.scams],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            onClick: (evt, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const filter = labels.distribution[index].toLowerCase().split(' ')[0];
+                    updateDashboard(filter);
+                }
+            }
+        }
+    });
+
+    const vectorCtx = document.getElementById('threatVectorChart').getContext('2d');
+    vectorChart = new Chart(vectorCtx, {
+        type: 'bar',
+        data: {
+            labels: labels.vectors,
+            datasets: [{
+                label: 'Threat Count',
+                data: chartData.overall.vectors,
+                backgroundColor: 'rgba(20, 83, 159, 0.6)',
+                borderColor: 'rgba(20, 83, 159, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    const trendsCtx = document.getElementById('threatTrendsChart').getContext('2d');
+    trendsChart = new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: labels.trends,
+            datasets: [
+                {
+                    label: 'Phishing',
+                    data: chartData.overall.trends.map(t => t.Phishing),
+                    borderColor: colors.phishingBorder,
+                    backgroundColor: colors.phishing,
+                    tension: 0.1
+                },
+                {
+                    label: 'Malware',
+                    data: chartData.overall.trends.map(t => t.Malware),
+                    borderColor: colors.malwareBorder,
+                    backgroundColor: colors.malware,
+                    tension: 0.1
+                },
+                {
+                    label: 'Scams',
+                    data: chartData.overall.trends.map(t => t.Scams),
+                    borderColor: colors.scamsBorder,
+                    backgroundColor: colors.scams,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+};
+
+const updateDashboard = (filter) => {
+    let data = chartData[filter] || chartData.overall;
+    let titleSuffix = filter.charAt(0).toUpperCase() + filter.slice(1);
+    if (filter === 'overall') titleSuffix = 'Overall';
+
+    document.getElementById('distribution-title').innerText = `Threat Distribution (${titleSuffix})`;
+    distributionChart.data.datasets[0].data = data.distribution;
+    distributionChart.update();
+    
+    document.getElementById('vector-title').innerText = `Top Threat Vectors (${titleSuffix})`;
+    vectorChart.data.datasets[0].data = data.vectors;
+    vectorChart.update();
+
+    document.getElementById('trends-title').innerText = `Monthly Threat Trends (${titleSuffix})`;
+    if (filter === 'overall') {
+        trendsChart.data.datasets = [
+            { label: 'Phishing', data: chartData.overall.trends.map(t => t.Phishing), borderColor: colors.phishingBorder, backgroundColor: colors.phishing, tension: 0.1 },
+            { label: 'Malware', data: chartData.overall.trends.map(t => t.Malware), borderColor: colors.malwareBorder, backgroundColor: colors.malware, tension: 0.1 },
+            { label: 'Scams', data: chartData.overall.trends.map(t => t.Scams), borderColor: colors.scamsBorder, backgroundColor: colors.scams, tension: 0.1 }
+        ];
+    } else {
+        trendsChart.data.datasets = [{
+            label: titleSuffix,
+            data: data.trends,
+            borderColor: colors[filter + 'Border'],
+            backgroundColor: colors[filter],
+            tension: 0.1
+        }];
+    }
+    trendsChart.update();
+};
+
+window.onload = createCharts;
+
+// CyberShield Scanner Logic
+const scanner = {
+    tabLink: document.getElementById('tab-link'),
+    tabPhoto: document.getElementById('tab-photo'),
+    linkForm: document.getElementById('link-form'),
+    photoForm: document.getElementById('photo-form'),
+    linkInput: document.getElementById('link-input'),
+    photoInput: document.getElementById('photo-input'),
+    fileNameDisplay: document.getElementById('file-name'),
+    resultsContainer: document.getElementById('results-container'),
+    loadingSpinner: document.getElementById('loading-spinner'),
+    report: document.getElementById('report'),
+    riskCircle: document.getElementById('risk-circle-indicator'),
+    riskScoreEl: document.getElementById('risk-score'),
+    riskTitleEl: document.getElementById('risk-title'),
+    riskSummaryEl: document.getElementById('risk-summary'),
+    riskDetailsEl: document.getElementById('risk-details'),
+    CIRCLE_CIRCUMFERENCE: 2 * Math.PI * 54,
+
+    init() {
+        this.tabLink.addEventListener('click', () => this.switchTab('link'));
+        this.tabPhoto.addEventListener('click', () => this.switchTab('photo'));
+        this.linkForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (this.linkInput.value.trim()) {
+                this.startAnalysis();
+                setTimeout(() => this.analyzeLink(this.linkInput.value.trim()), 1000);
+            }
+        });
+        this.photoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.fileNameDisplay.textContent = file.name;
+                this.startAnalysis();
+                setTimeout(() => this.analyzePhoto(file), 1000);
+            }
+        });
+    },
+
+    switchTab(tab) {
+        if (tab === 'link') {
+            this.tabLink.classList.add('active-tab');
+            this.tabLink.classList.remove('inactive-tab', 'text-slate-500');
+            this.tabPhoto.classList.remove('active-tab');
+            this.tabPhoto.classList.add('inactive-tab', 'text-slate-500');
+            this.linkForm.classList.remove('hidden');
+            this.photoForm.classList.add('hidden');
+        } else {
+            this.tabPhoto.classList.add('active-tab');
+            this.tabPhoto.classList.remove('inactive-tab', 'text-slate-500');
+            this.tabLink.classList.remove('active-tab');
+            this.tabLink.classList.add('inactive-tab', 'text-slate-500');
+            this.photoForm.classList.remove('hidden');
+            this.linkForm.classList.add('hidden');
+        }
+    },
+
+    startAnalysis() {
+        this.resultsContainer.classList.remove('hidden');
+        this.report.classList.add('hidden');
+        this.loadingSpinner.classList.remove('hidden');
+    },
+    
+    analyzeLink(url) {
+        let score = 0;
+        const details = [];
+        if (!url.startsWith('https://')) { score += 30; details.push({ text: 'Connection is not secure (no HTTPS).', type: 'danger' }); }
+        else { details.push({ text: 'Uses a secure HTTPS connection.', type: 'safe' }); }
+        if (url.length > 75) { score += 15; details.push({ text: 'URL is unusually long.', type: 'warning' }); }
+        if (['bit.ly', 't.co'].some(s => url.includes(s))) { score += 25; details.push({ text: 'Uses a URL shortener, hiding the destination.', type: 'warning' }); }
+        if (/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(url)) { score += 40; details.push({ text: 'URL is a direct IP address.', type: 'danger' }); }
+        else { details.push({ text: 'Uses a standard domain name.', type: 'safe' }); }
+        this.displayResults(Math.min(score, 100), details);
+    },
+
+    analyzePhoto(file) {
+        let score = 0;
+        const details = [];
+        if (file.size > 2 * 1024 * 1024) { score += 15; details.push({ text: 'File size is large.', type: 'warning' }); }
+        else { details.push({ text: 'File size is normal.', type: 'safe' }); }
+        if (!['image/png', 'image/jpeg'].includes(file.type)) { score += 50; details.push({ text: 'File is not a standard image type.', type: 'danger' }); }
+        else { details.push({ text: 'Standard image type detected.', type: 'safe' }); }
+        this.displayResults(Math.min(score, 100), details);
+    },
+
+    displayResults(score, details) {
+        this.loadingSpinner.classList.add('hidden');
+        this.report.classList.remove('hidden');
+        let colorClass, title, summary;
+        if (score < 30) { [colorClass, title, summary] = ['text-green-600', 'Likely Safe', 'No significant risks found.']; }
+        else if (score < 70) { [colorClass, title, summary] = ['text-yellow-600', 'Use Caution', 'Some potential risks detected.']; }
+        else { [colorClass, title, summary] = ['text-red-600', 'High Risk', 'Significant risks detected. Avoid opening.']; }
+        
+        this.riskScoreEl.className = `absolute inset-0 flex items-center justify-center text-4xl font-bold ${colorClass}`;
+        this.riskCircle.className = `risk-circle ${colorClass}`;
+        this.riskTitleEl.className = `text-2xl font-bold ${colorClass}`;
+
+        this.riskScoreEl.textContent = `${score}%`;
+        const offset = this.CIRCLE_CIRCUMFERENCE - (score / 100) * this.CIRCLE_CIRCUMFERENCE;
+        this.riskCircle.style.strokeDashoffset = offset;
+
+        this.riskTitleEl.textContent = title;
+        this.riskSummaryEl.textContent = summary;
+        
+        this.riskDetailsEl.innerHTML = '';
+        details.forEach(detail => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center gap-2';
+            li.innerHTML = `<span>${detail.text}</span>`;
+            this.riskDetailsEl.appendChild(li);
+        });
+    }
+};
+
+scanner.init();
+</script>
+</body>
+</html>
+
